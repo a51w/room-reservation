@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
@@ -73,6 +74,13 @@ export default function LoginPage() {
         <Button type="submit" loading={submitting} className="w-full">
           Sign In
         </Button>
+
+        <p className="text-center text-sm text-gray-500">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="font-medium text-blue-600 hover:text-blue-700">
+            Register
+          </Link>
+        </p>
       </form>
     </div>
   );

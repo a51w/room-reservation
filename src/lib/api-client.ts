@@ -1,5 +1,5 @@
 import { auth } from "@/lib/firebase/client";
-import type { Booking, Room, RoomSize } from "@/types";
+import type { Booking, Program, Room, RoomSize } from "@/types";
 
 // Central wrapper for every /api/* call: attaches the Firebase ID token automatically
 // and turns our error response shape into an Error message the UI can display directly.
@@ -93,4 +93,26 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
 
 export async function cancelBooking(bookingId: string): Promise<void> {
   await authedFetch(`/api/bookings/${bookingId}`, { method: "DELETE" });
+}
+
+export interface RegisterInput {
+  name: string;
+  studentId: string;
+  email: string;
+  password: string;
+  program: Program;
+}
+
+// Not routed through authedFetch: there's no signed-in user (and thus no ID token) yet.
+export async function registerUser(input: RegisterInput): Promise<void> {
+  const res = await fetch("/api/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? `Request failed with status ${res.status}`);
+  }
 }
