@@ -16,6 +16,9 @@ const PROGRAM_LABEL: Record<Program, string> = {
   health_data_science: "Health Data Science Program",
 };
 
+const STUDENT_ID_LENGTH = 11;
+const STUDENT_ID_PATTERN = /^\d{11}$/;
+
 export default function RegisterPage() {
   const { user, loading, login } = useAuth();
   const router = useRouter();
@@ -38,6 +41,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!STUDENT_ID_PATTERN.test(studentId)) {
+      setError(`Student ID must be exactly ${STUDENT_ID_LENGTH} digits`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       await registerUser({ name, studentId, email, password, program });
@@ -80,7 +89,11 @@ export default function RegisterPage() {
           id="studentId"
           label="Student ID"
           value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
+          onChange={(e) => setStudentId(e.target.value.replace(/\D/g, "").slice(0, STUDENT_ID_LENGTH))}
+          inputMode="numeric"
+          pattern="\d{11}"
+          maxLength={STUDENT_ID_LENGTH}
+          placeholder="11-digit student ID"
           required
         />
 
