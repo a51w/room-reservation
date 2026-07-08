@@ -1,31 +1,46 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 export default function LoginPage() {
-  const { login, error } = useAuth();
+  const { user, loading, login, error } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Already signed in (e.g. navigated back here manually) - skip straight to the app.
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace("/home");
+    }
+  }, [loading, user, router]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
       await login(email, password);
-      router.push("/");
+      router.push("/home");
     } catch {
       // error handled in useAuth
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (loading || user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
