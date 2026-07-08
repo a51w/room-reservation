@@ -13,11 +13,13 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = request.nextUrl;
   const roomId = searchParams.get("roomId") ?? undefined;
+  const userId = searchParams.get("userId") ?? undefined;
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
   const bookings = await listBookings({
     roomId,
+    userId,
     from: from ? new Date(from) : undefined,
     to: to ? new Date(to) : undefined,
   });
