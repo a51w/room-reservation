@@ -29,7 +29,7 @@ export function Button({
       className={`px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
       {...props}
     >
-      {loading ? "กำลังโหลด..." : children}
+      {loading ? "Loading..." : children}
     </button>
   );
 }

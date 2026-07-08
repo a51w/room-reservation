@@ -22,7 +22,7 @@ export function AppNav({ user, onSignOut }: AppNavProps) {
     <header className="border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-6">
-          <Link href="/" className="font-semibold text-gray-900">
+          <Link href="/home" className="font-semibold text-gray-900">
             CPE Room Reservation
           </Link>
           <nav className="flex items-center gap-4">
