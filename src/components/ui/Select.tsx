@@ -5,7 +5,9 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
 }
 
-// Shared select used across every form that needs a dropdown (room picker, room size, etc.)
+// Shared select used across every form that needs a dropdown (room picker, room size, etc.).
+// Explicit text color keeps the selected value readable regardless of the visitor's OS
+// dark-mode setting, since the select itself always stays light (bg-white).
 export function Select({ label, error, id, children, ...props }: SelectProps) {
   return (
     <div className="space-y-1">
@@ -14,7 +16,7 @@ export function Select({ label, error, id, children, ...props }: SelectProps) {
       </label>
       <select
         id={id}
-        className={`w-full bg-white px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+        className={`w-full bg-white px-3 py-2 text-gray-900 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
           error ? "border-red-500" : "border-gray-300"
         }`}
         {...props}
