@@ -4,6 +4,7 @@ import { createUserProfile } from "@/lib/server/users";
 import type { Program } from "@/types";
 
 const VALID_PROGRAMS: Program[] = ["regular", "international", "health_data_science"];
+const STUDENT_ID_PATTERN = /^\d{11}$/;
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
@@ -15,7 +16,9 @@ export async function POST(request: NextRequest) {
   const program = body?.program;
 
   if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
-  if (!studentId) return NextResponse.json({ error: "Student ID is required" }, { status: 400 });
+  if (!STUDENT_ID_PATTERN.test(studentId)) {
+    return NextResponse.json({ error: "Student ID must be exactly 11 digits" }, { status: 400 });
+  }
   if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
   if (!password || password.length < 6) {
     return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
