@@ -1,7 +1,6 @@
 import {
   FieldValue,
   Timestamp,
-  type Query,
   type QueryDocumentSnapshot,
   type DocumentSnapshot,
 } from "firebase-admin/firestore";
@@ -42,26 +41,34 @@ function toBooking(doc: QueryDocumentSnapshot | DocumentSnapshot): Booking {
 
 export interface ListBookingsFilter {
   roomId?: string;
+  userId?: string;
   from?: Date;
   to?: Date;
 }
 
-// Deliberately only use a range filter on a single field (startTime) when querying Firestore,
-// because filtering on two range fields at once (startTime and endTime) requires a composite
-// index that would need to be deployed ahead of time. The "from" bound is instead re-filtered
-// in memory after the query comes back.
+// Firestore needs a composite index for any query that combines an equality filter with a
+// range filter on a different field (or two equality filters plus a range/orderBy) — that
+// index has to be deployed ahead of time via the Firebase CLI/console, which isn't available
+// in this project's workflow. So we only ever run a plain orderBy query here (always covered
+// by Firestore's automatic single-field indexes) and apply every filter in memory instead.
+// Fine at this app's scale (one department, moderate booking volume).
 export async function listBookings(filter: ListBookingsFilter = {}): Promise<Booking[]> {
-  let query: Query = bookingsCollection;
-  if (filter.roomId) query = query.where("roomId", "==", filter.roomId);
-  if (filter.to) query = query.where("startTime", "<=", Timestamp.fromDate(filter.to));
-  query = query.orderBy("startTime");
-
-  const snapshot = await query.get();
+  const snapshot = await bookingsCollection.orderBy("startTime").get();
   let bookings = snapshot.docs.map(toBooking);
 
+  if (filter.roomId) {
+    bookings = bookings.filter((b) => b.roomId === filter.roomId);
+  }
+  if (filter.userId) {
+    bookings = bookings.filter((b) => b.userId === filter.userId);
+  }
   if (filter.from) {
     const fromMs = filter.from.getTime();
     bookings = bookings.filter((b) => new Date(b.endTime).getTime() >= fromMs);
+  }
+  if (filter.to) {
+    const toMs = filter.to.getTime();
+    bookings = bookings.filter((b) => new Date(b.startTime).getTime() <= toMs);
   }
 
   return bookings;
@@ -88,18 +95,18 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   const ref = bookingsCollection.doc();
 
   // Run inside a transaction to guard against a race when two people book the same room for
-  // overlapping times at nearly the same moment. Conflict check uses only startTime < newEndTime
-  // (single range field) then filters endTime > newStartTime in memory, again to avoid needing a
-  // composite index on two fields.
+  // overlapping times at nearly the same moment. Only a single equality filter (roomId) runs
+  // server-side — no composite index needed — and the actual overlap check (startTime <
+  // newEndTime && endTime > newStartTime) happens in memory over that room's bookings.
   await adminDb.runTransaction(async (tx) => {
-    const overlapQuery = bookingsCollection
-      .where("roomId", "==", input.roomId)
-      .where("startTime", "<", Timestamp.fromDate(input.endTime));
+    const overlapQuery = bookingsCollection.where("roomId", "==", input.roomId);
     const snapshot = await tx.get(overlapQuery);
 
     const hasConflict = snapshot.docs.some((doc) => {
-      const existingEnd = (doc.data().endTime as Timestamp).toDate();
-      return existingEnd > input.startTime;
+      const data = doc.data();
+      const existingStart = (data.startTime as Timestamp).toDate();
+      const existingEnd = (data.endTime as Timestamp).toDate();
+      return existingStart < input.endTime && existingEnd > input.startTime;
     });
     if (hasConflict) throw new BookingConflictError();
 

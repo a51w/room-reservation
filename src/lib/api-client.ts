@@ -54,6 +54,7 @@ export async function deleteRoom(roomId: string): Promise<void> {
 
 export interface BookingFilter {
   roomId?: string;
+  userId?: string;
   from?: Date;
   to?: Date;
 }
@@ -61,6 +62,7 @@ export interface BookingFilter {
 export async function fetchBookings(filter: BookingFilter = {}): Promise<Booking[]> {
   const params = new URLSearchParams();
   if (filter.roomId) params.set("roomId", filter.roomId);
+  if (filter.userId) params.set("userId", filter.userId);
   if (filter.from) params.set("from", filter.from.toISOString());
   if (filter.to) params.set("to", filter.to.toISOString());
 
