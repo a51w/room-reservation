@@ -28,12 +28,20 @@ export default function LandingPage() {
           chaos — see what&apos;s free, reserve a room in seconds, and keep track of
           every booking in one place.
         </p>
-        <Link
-          href="/login"
-          className="mt-8 inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-blue-700"
-        >
-          Sign In
-        </Link>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-blue-700"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/register"
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-900 transition-colors hover:bg-gray-100"
+          >
+            Create Account
+          </Link>
+        </div>
       </section>
 
       <section className="mx-auto grid w-full max-w-4xl gap-6 px-4 pb-20 sm:grid-cols-2">

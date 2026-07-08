@@ -26,3 +26,14 @@ export interface Booking {
   endTime: string;
   createdAt: string;
 }
+
+export type Program = "regular" | "international" | "health_data_science";
+
+export interface UserProfile {
+  uid: string;
+  name: string;
+  studentId: string;
+  email: string;
+  program: Program;
+  createdAt: string;
+}
