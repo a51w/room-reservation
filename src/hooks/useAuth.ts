@@ -18,8 +18,8 @@ interface UseAuthReturn {
   logout: () => Promise<void>;
 }
 
-// อ่าน custom claim "role" จาก Firebase user แล้วประกอบเป็น AppUser
-// แยกเป็นฟังก์ชันเดี่ยวเพราะจะถูกเรียกทุกครั้งที่ auth state เปลี่ยน
+// Reads the "role" custom claim off the Firebase user and assembles an AppUser.
+// Pulled into its own function because it runs every time auth state changes.
 async function toAppUser(firebaseUser: FirebaseUser): Promise<AppUser> {
   const tokenResult = await firebaseUser.getIdTokenResult();
   const role = (tokenResult.claims.role as UserRole) ?? "normal_user";
@@ -37,8 +37,8 @@ export function useAuth(): UseAuthReturn {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // onAuthStateChanged คอย listen ตลอดว่า login/logout เมื่อไหร่
-    // ไม่ต้องเรียก manual check เองในแต่ละหน้า
+    // onAuthStateChanged keeps listening for login/logout, so individual pages
+    // don't need to run their own manual auth checks.
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(await toAppUser(firebaseUser));
@@ -55,7 +55,7 @@ export function useAuth(): UseAuthReturn {
     setError(null);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // ไม่ต้อง setUser ที่นี่ เพราะ onAuthStateChanged ข้างบนจะ trigger เอง
+      // No need to setUser here; onAuthStateChanged above will trigger on its own
     } catch (err) {
       setError(getAuthErrorMessage(err));
       throw err;
@@ -69,8 +69,8 @@ export function useAuth(): UseAuthReturn {
   return { user, loading, error, login, logout };
 }
 
-// แปลง Firebase error code เป็นข้อความอ่านง่าย
-// เรียกซ้ำได้ทุกจุดที่มี auth error เกิดขึ้น ไม่ต้องเขียน switch-case ซ้ำ
+// Converts a Firebase error code into a readable message.
+// Reusable anywhere an auth error surfaces, so we don't repeat the switch-case.
 function getAuthErrorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code;
   switch (code) {

@@ -5,7 +5,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-// input กลาง ใช้ทุกฟอร์ม (login, room form, booking form)
+// Shared input used across every form (login, room form, booking form)
 export function Input({ label, error, id, ...props }: InputProps) {
   return (
     <div className="space-y-1">

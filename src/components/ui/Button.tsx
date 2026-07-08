@@ -7,8 +7,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "danger" | "secondary";
 }
 
-// ปุ่มกลาง ใช้ทุกฟอร์มในระบบ (login, booking, room management)
-// มี loading state ในตัว ไม่ต้องเขียน disabled/spinner ซ้ำทุกที่
+// Shared button used across every form in the app (login, booking, room management).
+// Has loading state built in so we don't rewrite disabled/spinner handling everywhere.
 export function Button({
   loading,
   variant = "primary",

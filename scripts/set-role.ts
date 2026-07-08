@@ -4,8 +4,8 @@ dotenv.config({ path: ".env.local" });
 import type { UserRole } from "../src/types";
 
 async function main() {
-  // ต้อง import แบบ dynamic เพื่อให้แน่ใจว่า dotenv.config() รันไปแล้วจริงๆ
-  // ก่อนที่ admin.ts จะถูก initialize (แก้ปัญหา ESM import hoisting)
+  // Must be a dynamic import so dotenv.config() has actually run before admin.ts
+  // gets initialized (works around ESM import hoisting)
   const { adminAuth } = await import("../src/lib/firebase/admin");
 
   const [, , email, role] = process.argv;
@@ -22,7 +22,7 @@ async function main() {
 
   const user = await adminAuth.getUserByEmail(email);
   await adminAuth.setCustomUserClaims(user.uid, { role: role as UserRole });
-  console.log(`✅ Set role "${role}" for ${email} (uid: ${user.uid})`);
+  console.log(`Set role "${role}" for ${email} (uid: ${user.uid})`);
 }
 
 main()
