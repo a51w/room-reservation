@@ -21,10 +21,18 @@ function validateRoomFields(
   name: string,
   location: string,
   capacityInput: string,
-  size: RoomSize
+  size: RoomSize,
+  existingRooms: Room[],
+  excludeRoomId?: string
 ): { capacity: number } | { error: string } {
-  if (!name.trim()) return { error: "Room name is required" };
+  const trimmedName = name.trim();
+  if (!trimmedName) return { error: "Room name is required" };
   if (!location.trim()) return { error: "Location is required" };
+
+  const nameTaken = existingRooms.some(
+    (room) => room.id !== excludeRoomId && room.name.trim().toLowerCase() === trimmedName.toLowerCase()
+  );
+  if (nameTaken) return { error: "This name has already been used" };
 
   const capacity = Number(capacityInput);
   if (!Number.isInteger(capacity) || capacity <= 0) {
@@ -68,7 +76,7 @@ export default function ManageRoomsPage() {
     e.preventDefault();
     setAddError(null);
 
-    const result = validateRoomFields(name, location, capacity, size);
+    const result = validateRoomFields(name, location, capacity, size, rooms ?? []);
     if ("error" in result) {
       setAddError(result.error);
       return;
@@ -111,7 +119,7 @@ export default function ManageRoomsPage() {
     if (!editingRoomId) return;
     setEditError(null);
 
-    const result = validateRoomFields(editName, editLocation, editCapacity, editSize);
+    const result = validateRoomFields(editName, editLocation, editCapacity, editSize, rooms ?? [], editingRoomId);
     if ("error" in result) {
       setEditError(result.error);
       return;

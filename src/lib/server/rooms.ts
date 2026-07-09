@@ -21,6 +21,16 @@ export async function listRooms(): Promise<Room[]> {
   return snapshot.docs.map(toRoom);
 }
 
+// Firestore has no case-insensitive query, and the room count is small, so we
+// just compare in memory rather than adding another composite index to manage.
+export async function roomNameExists(name: string, excludeRoomId?: string): Promise<boolean> {
+  const snapshot = await roomsCollection.get();
+  const normalized = name.trim().toLowerCase();
+  return snapshot.docs.some(
+    (doc) => doc.id !== excludeRoomId && (doc.data().name as string).trim().toLowerCase() === normalized
+  );
+}
+
 export async function getRoom(roomId: string): Promise<Room | null> {
   const doc = await roomsCollection.doc(roomId).get();
   return doc.exists ? toRoom(doc) : null;

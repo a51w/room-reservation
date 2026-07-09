@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthedUser } from "@/lib/firebase/auth-server";
-import { deleteRoom, getRoom, updateRoom } from "@/lib/server/rooms";
+import { deleteRoom, getRoom, roomNameExists, updateRoom } from "@/lib/server/rooms";
 import { ROOM_SIZE_CAPACITY_MAX } from "@/lib/constants";
 import type { RoomSize } from "@/types";
 
@@ -28,7 +28,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (typeof body.name !== "string" || !body.name.trim()) {
       return NextResponse.json({ error: "Room name must not be empty" }, { status: 400 });
     }
-    updates.name = body.name.trim();
+    const trimmedName = body.name.trim();
+    if (await roomNameExists(trimmedName, roomId)) {
+      return NextResponse.json({ error: "This name has already been used" }, { status: 409 });
+    }
+    updates.name = trimmedName;
   }
   if (body?.size !== undefined) {
     if (!VALID_SIZES.includes(body.size)) {
