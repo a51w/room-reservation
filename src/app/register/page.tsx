@@ -8,13 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { registerUser } from "@/lib/api-client";
+import { PROGRAM_LABEL } from "@/lib/constants";
 import type { Program } from "@/types";
-
-const PROGRAM_LABEL: Record<Program, string> = {
-  regular: "Regular Program",
-  international: "International Program",
-  health_data_science: "Health Data Science Program",
-};
 
 const STUDENT_ID_LENGTH = 11;
 const STUDENT_ID_PATTERN = /^\d{11}$/;

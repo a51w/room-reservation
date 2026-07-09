@@ -1,5 +1,5 @@
 import { auth } from "@/lib/firebase/client";
-import type { Booking, Program, Room, RoomSize } from "@/types";
+import type { AdminUserSummary, Booking, Program, Room, RoomSize, UserRole } from "@/types";
 
 // Central wrapper for every /api/* call: attaches the Firebase ID token automatically
 // and turns our error response shape into an Error message the UI can display directly.
@@ -122,4 +122,16 @@ export async function registerUser(input: RegisterInput): Promise<void> {
     const body = await res.json().catch(() => null);
     throw new Error(body?.error ?? `Request failed with status ${res.status}`);
   }
+}
+
+export async function fetchUsers(): Promise<AdminUserSummary[]> {
+  const data = await authedFetch("/api/users");
+  return data.users;
+}
+
+export async function setUserRole(uid: string, role: UserRole): Promise<void> {
+  await authedFetch(`/api/users/${uid}`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
 }
