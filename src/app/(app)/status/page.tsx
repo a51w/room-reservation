@@ -8,6 +8,8 @@ import { ROOM_SIZE_LABEL } from "@/lib/constants";
 import { endOfDay, startOfDay, toDateInputValue } from "@/lib/date-utils";
 import type { Booking, Room } from "@/types";
 
+const STATUS_POLL_INTERVAL_MS = 15000;
+
 function formatClock(date: Date): string {
   return date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
@@ -40,9 +42,13 @@ export default function RoomStatusPage() {
   const nowMs = now.getTime();
   const dateKey = toDateInputValue(now);
 
-  const { data: rooms } = useSWR("rooms", fetchRooms);
-  const { data: bookings } = useSWR(["status-bookings", dateKey], () =>
-    fetchBookings({ from: startOfDay(now), to: endOfDay(now) })
+  // Polls so this dashboard reflects bookings/rooms changed by other users without
+  // requiring a manual reload - the whole point of a "real-time" status screen.
+  const { data: rooms } = useSWR("rooms", fetchRooms, { refreshInterval: STATUS_POLL_INTERVAL_MS });
+  const { data: bookings } = useSWR(
+    ["status-bookings", dateKey],
+    () => fetchBookings({ from: startOfDay(now), to: endOfDay(now) }),
+    { refreshInterval: STATUS_POLL_INTERVAL_MS }
   );
 
   const roomStatuses: RoomStatus[] = (rooms ?? []).map((room) => {

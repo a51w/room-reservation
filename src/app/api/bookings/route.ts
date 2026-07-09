@@ -6,6 +6,7 @@ import {
   createBooking,
   listBookings,
 } from "@/lib/server/bookings";
+import { getUserBasicInfo } from "@/lib/server/users";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthedUser(request);
@@ -52,14 +53,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Cannot book a time in the past" }, { status: 400 });
   }
 
+  // Only admins may book on behalf of someone else (Global Booking Management); anyone
+  // else booking is always attributed to themselves regardless of what's in the body.
+  let bookingOwner = { userId: user.uid, userEmail: user.email };
+  const targetUserId = typeof body?.userId === "string" ? body.userId : "";
+  if (targetUserId && targetUserId !== user.uid) {
+    if (user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const targetUser = await getUserBasicInfo(targetUserId);
+    if (!targetUser) {
+      return NextResponse.json({ error: "Selected user not found" }, { status: 404 });
+    }
+    bookingOwner = { userId: targetUser.uid, userEmail: targetUser.email };
+  }
+
   try {
     const booking = await createBooking({
       roomId,
       title,
       startTime,
       endTime,
-      userId: user.uid,
-      userEmail: user.email,
+      userId: bookingOwner.userId,
+      userEmail: bookingOwner.userEmail,
     });
     return NextResponse.json({ booking }, { status: 201 });
   } catch (err) {
