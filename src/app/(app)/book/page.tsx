@@ -9,10 +9,17 @@ import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { createBooking, fetchRooms } from "@/lib/api-client";
 import { ROOM_SIZE_LABEL } from "@/lib/constants";
-import { formatDateTimeRange } from "@/lib/date-utils";
+import { formatDateLabel, formatDateTimeRange, formatTimeLabel } from "@/lib/date-utils";
 import type { Booking } from "@/types";
 
 const CONFIRMATION_REDIRECT_DELAY_MS = 1800;
+
+interface PendingBooking {
+  roomId: string;
+  title: string;
+  startTime: Date;
+  endTime: Date;
+}
 
 function BookRoomForm() {
   const router = useRouter();
@@ -27,13 +34,15 @@ function BookRoomForm() {
   const [title, setTitle] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingBooking, setPendingBooking] = useState<PendingBooking | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
   // Priority: explicit selection > ?roomId= from a "book this room" link (e.g. the
   // status dashboard) > the first loaded room - all derived, no effect needed to sync it.
   const selectedRoomId = roomId || preselectedRoomId || rooms?.[0]?.id || "";
+  const pendingRoom = pendingBooking ? rooms?.find((r) => r.id === pendingBooking.roomId) : undefined;
 
   // Give the user a moment to read the confirmation before moving them on - same
   // "subscribe to a timer, act in its callback" shape as the status dashboard's clock.
@@ -43,7 +52,7 @@ function BookRoomForm() {
     return () => clearTimeout(timer);
   }, [confirmedBooking, router]);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -63,17 +72,25 @@ function BookRoomForm() {
       return;
     }
 
-    setSubmitting(true);
+    setPendingBooking({ roomId: selectedRoomId, title, startTime: start, endTime: end });
+  };
+
+  const handleConfirm = async () => {
+    if (!pendingBooking) return;
+    setConfirming(true);
+    setError(null);
     try {
-      const booking = await createBooking({ roomId: selectedRoomId, title, startTime: start, endTime: end });
+      const booking = await createBooking(pendingBooking);
       setConfirmedBooking(booking);
+      setPendingBooking(null);
       setTitle("");
       setStartTime("");
       setEndTime("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create booking");
+      setPendingBooking(null);
     } finally {
-      setSubmitting(false);
+      setConfirming(false);
     }
   };
 
@@ -130,10 +147,60 @@ function BookRoomForm() {
           </p>
         )}
 
-        <Button type="submit" loading={submitting} className="w-full">
+        <Button type="submit" className="w-full">
           Book Room
         </Button>
       </form>
+
+      <Modal open={pendingBooking !== null} onClose={confirming ? undefined : () => setPendingBooking(null)}>
+        {pendingBooking && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Confirm Booking</h2>
+
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Room</dt>
+                <dd className="text-right text-gray-900">
+                  {pendingRoom ? `${pendingRoom.name} (${ROOM_SIZE_LABEL[pendingRoom.size]})` : "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Title</dt>
+                <dd className="text-right text-gray-900">{pendingBooking.title || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Date</dt>
+                <dd className="text-right text-gray-900">
+                  {formatDateLabel(pendingBooking.startTime.toISOString())}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Time</dt>
+                <dd className="text-right text-gray-900">
+                  {formatTimeLabel(pendingBooking.startTime.toISOString())} -{" "}
+                  {formatTimeLabel(pendingBooking.endTime.toISOString())}
+                </dd>
+              </div>
+            </dl>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setPendingBooking(null)}
+              >
+                Cancel
+              </Button>
+              <Button type="button" className="flex-1" loading={confirming} onClick={handleConfirm}>
+                Confirm Booking
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal open={confirmedBooking !== null}>
         <div className="space-y-4 text-center">
