@@ -1,7 +1,20 @@
 import type { RoomSize } from "@/types";
 
+export const ROOM_SIZES: RoomSize[] = ["small", "medium", "large"];
+
 export const ROOM_SIZE_LABEL: Record<RoomSize, string> = {
   small: "Small",
   medium: "Medium",
   large: "Large",
 };
+
+// Ceiling on a room's capacity for its size class - a small room can be smaller
+// than 20, but never larger. Enforced both client-side (form hint/max) and
+// server-side (the actual validation).
+export const ROOM_SIZE_CAPACITY_MAX: Record<RoomSize, number> = {
+  small: 20,
+  medium: 50,
+  large: 80,
+};
+
+export const DEFAULT_ROOM_LOCATION = "11th Floor, Wissawa Wattana Building, KMUTT, Bangkok";

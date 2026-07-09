@@ -12,6 +12,8 @@ const NAV_LINKS = [
   { href: "/status", label: "Room Status" },
 ];
 
+const ADMIN_NAV_LINKS = [{ href: "/admin/rooms", label: "Manage Rooms" }];
+
 interface AppNavProps {
   user: AppUser;
   onSignOut: () => void;
@@ -28,7 +30,7 @@ export function AppNav({ user, onSignOut }: AppNavProps) {
             CPE Room Reservation
           </Link>
           <nav className="flex items-center gap-4">
-            {NAV_LINKS.map((link) => (
+            {[...NAV_LINKS, ...(user.role === "admin" ? ADMIN_NAV_LINKS : [])].map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

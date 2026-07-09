@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthedUser } from "@/lib/firebase/auth-server";
 import { createRoom, listRooms } from "@/lib/server/rooms";
+import { ROOM_SIZE_CAPACITY_MAX } from "@/lib/constants";
 import type { RoomSize } from "@/types";
 
 const VALID_SIZES: RoomSize[] = ["small", "medium", "large"];
@@ -23,6 +24,8 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const size = body?.size;
+  const location = typeof body?.location === "string" ? body.location.trim() : "";
+  const capacity = body?.capacity;
 
   if (!name) {
     return NextResponse.json({ error: "Room name is required" }, { status: 400 });
@@ -30,7 +33,19 @@ export async function POST(request: NextRequest) {
   if (!VALID_SIZES.includes(size)) {
     return NextResponse.json({ error: "Size must be small, medium, or large" }, { status: 400 });
   }
+  if (!location) {
+    return NextResponse.json({ error: "Location is required" }, { status: 400 });
+  }
+  if (typeof capacity !== "number" || !Number.isInteger(capacity) || capacity <= 0) {
+    return NextResponse.json({ error: "Capacity must be a positive whole number" }, { status: 400 });
+  }
+  if (capacity > ROOM_SIZE_CAPACITY_MAX[size as RoomSize]) {
+    return NextResponse.json(
+      { error: `Capacity for a ${size} room can't exceed ${ROOM_SIZE_CAPACITY_MAX[size as RoomSize]}` },
+      { status: 400 }
+    );
+  }
 
-  const room = await createRoom(name, size);
+  const room = await createRoom({ name, size, location, capacity });
   return NextResponse.json({ room }, { status: 201 });
 }

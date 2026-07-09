@@ -29,17 +29,24 @@ export async function fetchRooms(): Promise<Room[]> {
   return data.rooms;
 }
 
-export async function createRoom(name: string, size: RoomSize): Promise<Room> {
+export interface CreateRoomInput {
+  name: string;
+  size: RoomSize;
+  location: string;
+  capacity: number;
+}
+
+export async function createRoom(input: CreateRoomInput): Promise<Room> {
   const data = await authedFetch("/api/rooms", {
     method: "POST",
-    body: JSON.stringify({ name, size }),
+    body: JSON.stringify(input),
   });
   return data.room;
 }
 
 export async function updateRoom(
   roomId: string,
-  updates: Partial<{ name: string; size: RoomSize }>
+  updates: Partial<{ name: string; size: RoomSize; location: string; capacity: number }>
 ): Promise<Room> {
   const data = await authedFetch(`/api/rooms/${roomId}`, {
     method: "PATCH",
