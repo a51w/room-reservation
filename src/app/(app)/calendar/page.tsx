@@ -3,10 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/hooks/useAuth";
 import { cancelBooking, fetchBookings, fetchRooms } from "@/lib/api-client";
 import { ROOM_SIZE_LABEL, ROOM_SIZES } from "@/lib/constants";
-import { endOfDay, parseDateInputValue, startOfDay, toDateInputValue } from "@/lib/date-utils";
+import { endOfDay, formatDateLabel, formatTimeLabel, parseDateInputValue, startOfDay, toDateInputValue } from "@/lib/date-utils";
 import type { Booking, RoomSize } from "@/types";
 
 const DAY_START_HOUR = 8;
@@ -63,6 +65,7 @@ export default function CalendarDashboardPage() {
   const [search, setSearch] = useState("");
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const dayStart = startOfDay(selectedDate);
   const dateKey = toDateInputValue(selectedDate);
@@ -100,12 +103,15 @@ export default function CalendarDashboardPage() {
     try {
       await cancelBooking(bookingId);
       await refreshBookings();
+      setSelectedBooking(null);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Failed to cancel booking");
     } finally {
       setCancelingId(null);
     }
   };
+
+  const selectedRoom = rooms?.find((room) => room.id === selectedBooking?.roomId) ?? null;
 
   const gridHeight = ((DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT_PX);
 
@@ -243,35 +249,25 @@ export default function CalendarDashboardPage() {
                         {roomBookings.length === 0 && bookingsLoading && (
                           <p className="p-2 text-xs text-gray-400">Loading...</p>
                         )}
-                        {roomBookings.map(({ booking, topPercent, heightPercent }) => {
-                          const canCancel = user?.role === "admin" || booking.userId === user?.uid;
-                          return (
-                            <div
-                              key={booking.id}
-                              className="absolute inset-x-1 overflow-hidden rounded-md border border-blue-300 bg-blue-50 p-1.5 text-xs"
-                              style={{ top: `${topPercent}%`, height: `${heightPercent}%` }}
-                            >
-                              <div className="flex items-start justify-between gap-1">
-                                <p className="truncate font-medium text-blue-900">{booking.title}</p>
-                                {canCancel && (
-                                  <button
-                                    type="button"
-                                    title="Cancel booking"
-                                    disabled={cancelingId === booking.id}
-                                    onClick={() => handleCancel(booking.id)}
-                                    className="flex-shrink-0 text-blue-700 hover:text-red-600 disabled:opacity-50"
-                                  >
-                                    ×
-                                  </button>
-                                )}
-                              </div>
-                              <p className="truncate text-blue-700">{booking.userEmail}</p>
-                              <p className="truncate text-blue-700">
-                                {formatTimeRange(booking.startTime, booking.endTime)}
-                              </p>
-                            </div>
-                          );
-                        })}
+                        {roomBookings.map(({ booking, topPercent, heightPercent }) => (
+                          <div
+                            key={booking.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setSelectedBooking(booking)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") setSelectedBooking(booking);
+                            }}
+                            className="absolute inset-x-1 cursor-pointer overflow-hidden rounded-md border border-blue-300 bg-blue-50 p-1.5 text-left text-xs transition-shadow hover:shadow-md"
+                            style={{ top: `${topPercent}%`, height: `${heightPercent}%` }}
+                          >
+                            <p className="truncate font-medium text-blue-900">{booking.title}</p>
+                            <p className="truncate text-blue-700">{booking.userEmail}</p>
+                            <p className="truncate text-blue-700">
+                              {formatTimeRange(booking.startTime, booking.endTime)}
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   );
@@ -281,6 +277,69 @@ export default function CalendarDashboardPage() {
           )}
         </div>
       </div>
+
+      <Modal open={selectedBooking !== null} onClose={() => setSelectedBooking(null)}>
+        {selectedBooking && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">{selectedBooking.title}</h2>
+
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Booked By</dt>
+                <dd className="text-right text-gray-900">{selectedBooking.userEmail}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Date</dt>
+                <dd className="text-right text-gray-900">{formatDateLabel(selectedBooking.startTime)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Time</dt>
+                <dd className="text-right text-gray-900">
+                  {formatTimeLabel(selectedBooking.startTime)} - {formatTimeLabel(selectedBooking.endTime)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Room</dt>
+                <dd className="text-right text-gray-900">{selectedBooking.roomName}</dd>
+              </div>
+              {selectedRoom && (
+                <>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-gray-500">Size</dt>
+                    <dd className="text-right text-gray-900">{ROOM_SIZE_LABEL[selectedRoom.size]}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-gray-500">Capacity</dt>
+                    <dd className="text-right text-gray-900">{selectedRoom.capacity} people</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-gray-500">Location</dt>
+                    <dd className="text-right text-gray-900">{selectedRoom.location}</dd>
+                  </div>
+                </>
+              )}
+            </dl>
+
+            {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+
+            <div className="flex gap-2">
+              <Button variant="secondary" className="flex-1" onClick={() => setSelectedBooking(null)}>
+                Close
+              </Button>
+              {user?.role === "admin" && (
+                <Button
+                  variant="danger"
+                  className="flex-1"
+                  loading={cancelingId === selectedBooking.id}
+                  onClick={() => handleCancel(selectedBooking.id)}
+                >
+                  Cancel Reservation
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
