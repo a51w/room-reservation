@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthedUser } from "@/lib/firebase/auth-server";
-import { createRoom, listRooms } from "@/lib/server/rooms";
+import { createRoom, listRooms, roomNameExists } from "@/lib/server/rooms";
 import { ROOM_SIZE_CAPACITY_MAX } from "@/lib/constants";
 import type { RoomSize } from "@/types";
 
@@ -44,6 +44,9 @@ export async function POST(request: NextRequest) {
       { error: `Capacity for a ${size} room can't exceed ${ROOM_SIZE_CAPACITY_MAX[size as RoomSize]}` },
       { status: 400 }
     );
+  }
+  if (await roomNameExists(name)) {
+    return NextResponse.json({ error: "This name has already been used" }, { status: 409 });
   }
 
   const room = await createRoom({ name, size, location, capacity });
