@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { useAuth } from "@/hooks/useAuth";
 import { cancelBooking, fetchBookings, fetchRooms } from "@/lib/api-client";
 import { ROOM_SIZE_LABEL } from "@/lib/constants";
+import { endOfDay, parseDateInputValue, startOfDay, toDateInputValue } from "@/lib/date-utils";
 import type { Booking, RoomSize } from "@/types";
 
 const DAY_START_HOUR = 8;
@@ -19,24 +20,6 @@ const HOUR_LABELS = Array.from(
   (_, i) => DAY_START_HOUR + i
 );
 const ROOM_SIZES: RoomSize[] = ["small", "medium", "large"];
-
-function toDateInputValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-function parseDateInputValue(value: string): Date {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function endOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-}
 
 function formatHourLabel(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
