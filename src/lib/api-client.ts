@@ -1,8 +1,7 @@
 import { auth } from "@/lib/firebase/client";
 import type { AdminUserSummary, Booking, Program, Room, RoomSize, UserRole } from "@/types";
 
-// Central wrapper for every /api/* call: attaches the Firebase ID token automatically
-// and turns our error response shape into an Error message the UI can display directly.
+// Helper function to make an authenticated fetch request to our API routes.
 async function authedFetch(path: string, options: RequestInit = {}) {
   const idToken = await auth.currentUser?.getIdToken();
   if (!idToken) throw new Error("Not authenticated");
