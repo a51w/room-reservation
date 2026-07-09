@@ -10,6 +10,8 @@ function toRoom(doc: QueryDocumentSnapshot | DocumentSnapshot): Room {
     id: doc.id,
     name: data.name,
     size: data.size,
+    location: data.location,
+    capacity: data.capacity,
     createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
   };
 }
@@ -24,10 +26,19 @@ export async function getRoom(roomId: string): Promise<Room | null> {
   return doc.exists ? toRoom(doc) : null;
 }
 
-export async function createRoom(name: string, size: RoomSize): Promise<Room> {
+export interface CreateRoomInput {
+  name: string;
+  size: RoomSize;
+  location: string;
+  capacity: number;
+}
+
+export async function createRoom(input: CreateRoomInput): Promise<Room> {
   const ref = await roomsCollection.add({
-    name,
-    size,
+    name: input.name,
+    size: input.size,
+    location: input.location,
+    capacity: input.capacity,
     createdAt: FieldValue.serverTimestamp(),
   });
   const doc = await ref.get();
@@ -36,7 +47,7 @@ export async function createRoom(name: string, size: RoomSize): Promise<Room> {
 
 export async function updateRoom(
   roomId: string,
-  updates: Partial<{ name: string; size: RoomSize }>
+  updates: Partial<{ name: string; size: RoomSize; location: string; capacity: number }>
 ): Promise<Room | null> {
   const ref = roomsCollection.doc(roomId);
   const doc = await ref.get();

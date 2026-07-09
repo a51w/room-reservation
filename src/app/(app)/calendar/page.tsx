@@ -5,7 +5,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import { useAuth } from "@/hooks/useAuth";
 import { cancelBooking, fetchBookings, fetchRooms } from "@/lib/api-client";
-import { ROOM_SIZE_LABEL } from "@/lib/constants";
+import { ROOM_SIZE_LABEL, ROOM_SIZES } from "@/lib/constants";
 import { endOfDay, parseDateInputValue, startOfDay, toDateInputValue } from "@/lib/date-utils";
 import type { Booking, RoomSize } from "@/types";
 
@@ -19,7 +19,6 @@ const HOUR_LABELS = Array.from(
   { length: DAY_END_HOUR - DAY_START_HOUR + 1 },
   (_, i) => DAY_START_HOUR + i
 );
-const ROOM_SIZES: RoomSize[] = ["small", "medium", "large"];
 
 function formatHourLabel(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;

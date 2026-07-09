@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
 
 const ACTIONS = [
   {
@@ -23,12 +26,23 @@ const ACTIONS = [
   },
 ];
 
+const ADMIN_ACTIONS = [
+  {
+    href: "/admin/rooms",
+    title: "Manage Rooms",
+    description: "Add, edit, or remove meeting rooms.",
+  },
+];
+
 export default function HomePage() {
+  const { user } = useAuth();
+  const actions = user?.role === "admin" ? [...ACTIONS, ...ADMIN_ACTIONS] : ACTIONS;
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-gray-900">Welcome</h1>
       <div className="grid gap-4 sm:grid-cols-2">
-        {ACTIONS.map((action) => (
+        {actions.map((action) => (
           <Link
             key={action.href}
             href={action.href}

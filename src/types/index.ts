@@ -12,6 +12,8 @@ export interface Room {
   id: string;
   name: string;
   size: RoomSize;
+  location: string;
+  capacity: number;
   createdAt: string;
 }
 
