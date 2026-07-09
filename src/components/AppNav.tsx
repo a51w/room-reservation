@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/book", label: "Book a Room" },
   { href: "/my-bookings", label: "My Bookings" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/status", label: "Room Status" },
 ];
 
 interface AppNavProps {

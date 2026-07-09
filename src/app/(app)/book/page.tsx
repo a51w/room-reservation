@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -8,7 +9,10 @@ import { Select } from "@/components/ui/Select";
 import { createBooking, fetchRooms } from "@/lib/api-client";
 import { ROOM_SIZE_LABEL } from "@/lib/constants";
 
-export default function BookRoomPage() {
+function BookRoomForm() {
+  const searchParams = useSearchParams();
+  const preselectedRoomId = searchParams.get("roomId");
+
   const { data: rooms, isLoading: roomsLoading, error: roomsFetchError } = useSWR(
     "rooms",
     fetchRooms
@@ -21,9 +25,9 @@ export default function BookRoomPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Falls back to the first loaded room until the user picks one explicitly,
-  // instead of syncing default selection through an effect.
-  const selectedRoomId = roomId || rooms?.[0]?.id || "";
+  // Priority: explicit selection > ?roomId= from a "book this room" link (e.g. the
+  // status dashboard) > the first loaded room - all derived, no effect needed to sync it.
+  const selectedRoomId = roomId || preselectedRoomId || rooms?.[0]?.id || "";
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -119,5 +123,14 @@ export default function BookRoomPage() {
         </Button>
       </form>
     </div>
+  );
+}
+
+// useSearchParams requires a Suspense boundary during static generation.
+export default function BookRoomPage() {
+  return (
+    <Suspense fallback={<p className="text-center text-gray-500">Loading...</p>}>
+      <BookRoomForm />
+    </Suspense>
   );
 }

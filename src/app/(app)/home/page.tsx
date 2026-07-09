@@ -16,6 +16,11 @@ const ACTIONS = [
     title: "Calendar Dashboard",
     description: "See which rooms are booked and when, at a glance.",
   },
+  {
+    href: "/status",
+    title: "Real-time Room Status",
+    description: "Check which rooms are free or occupied right now.",
+  },
 ];
 
 export default function HomePage() {
