@@ -8,6 +8,7 @@ import type { AppUser } from "@/types";
 const NAV_LINKS = [
   { href: "/book", label: "Book a Room" },
   { href: "/my-bookings", label: "My Bookings" },
+  { href: "/calendar", label: "Calendar" },
 ];
 
 interface AppNavProps {
