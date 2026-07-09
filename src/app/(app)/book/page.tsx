@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { useAuth } from "@/hooks/useAuth";
-import { createBooking, fetchRooms, fetchUsers } from "@/lib/api-client";
+import { createBooking, fetchRooms } from "@/lib/api-client";
 import { ROOM_SIZE_LABEL } from "@/lib/constants";
 import { formatDateLabel, formatDateTimeRange, formatTimeLabel } from "@/lib/date-utils";
 import type { Booking } from "@/types";
@@ -20,7 +20,7 @@ interface PendingBooking {
   title: string;
   startTime: Date;
   endTime: Date;
-  userId?: string;
+  bookForEmail?: string;
 }
 
 function BookRoomForm() {
@@ -34,9 +34,6 @@ function BookRoomForm() {
     "rooms",
     fetchRooms
   );
-  // Admins can book on behalf of another user (Global Booking Management); everyone else
-  // only ever books for themselves, so this list is never fetched for a normal_user.
-  const { data: users } = useSWR(isAdmin ? "users" : null, fetchUsers);
 
   const [roomId, setRoomId] = useState("");
   const [title, setTitle] = useState("");
@@ -53,14 +50,6 @@ function BookRoomForm() {
   // status dashboard) > the first loaded room - all derived, no effect needed to sync it.
   const selectedRoomId = roomId || preselectedRoomId || rooms?.[0]?.id || "";
   const pendingRoom = pendingBooking ? rooms?.find((r) => r.id === pendingBooking.roomId) : undefined;
-  const pendingBookForUser = pendingBooking?.userId
-    ? users?.find((u) => u.uid === pendingBooking.userId)
-    : undefined;
-  // Looked up against the already-loaded user list, so ticking the box requires an
-  // email that's actually a registered account, not an arbitrary address.
-  const matchedBookForUser = bookForOther
-    ? users?.find((u) => (u.email ?? "").toLowerCase() === bookForEmail.trim().toLowerCase())
-    : undefined;
 
   // Give the user a moment to read the confirmation before moving them on - same
   // "subscribe to a timer, act in its callback" shape as the status dashboard's clock.
@@ -89,15 +78,9 @@ function BookRoomForm() {
       setError("Start time must be before end time");
       return;
     }
-    if (bookForOther) {
-      if (!bookForEmail.trim()) {
-        setError("Please enter the user's email");
-        return;
-      }
-      if (!matchedBookForUser) {
-        setError("No registered user found with this email");
-        return;
-      }
+    if (bookForOther && !bookForEmail.trim()) {
+      setError("Please enter the user's email");
+      return;
     }
 
     setPendingBooking({
@@ -105,7 +88,7 @@ function BookRoomForm() {
       title,
       startTime: start,
       endTime: end,
-      ...(matchedBookForUser ? { userId: matchedBookForUser.uid } : {}),
+      ...(bookForOther ? { bookForEmail: bookForEmail.trim() } : {}),
     });
   };
 
@@ -227,14 +210,10 @@ function BookRoomForm() {
                   {pendingRoom ? `${pendingRoom.name} (${ROOM_SIZE_LABEL[pendingRoom.size]})` : "—"}
                 </dd>
               </div>
-              {pendingBooking.userId && (
+              {pendingBooking.bookForEmail && (
                 <div className="flex justify-between gap-4">
                   <dt className="text-gray-500">Booking For</dt>
-                  <dd className="text-right text-gray-900">
-                    {pendingBookForUser
-                      ? pendingBookForUser.name ?? pendingBookForUser.email
-                      : "—"}
-                  </dd>
+                  <dd className="text-right text-gray-900">{pendingBooking.bookForEmail}</dd>
                 </div>
               )}
               <div className="flex justify-between gap-4">

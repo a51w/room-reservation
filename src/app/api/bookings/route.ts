@@ -6,7 +6,7 @@ import {
   createBooking,
   listBookings,
 } from "@/lib/server/bookings";
-import { getUserBasicInfo } from "@/lib/server/users";
+import { getUserBasicInfoByEmail } from "@/lib/server/users";
 
 export async function GET(request: NextRequest) {
   const user = await getAuthedUser(request);
@@ -55,15 +55,17 @@ export async function POST(request: NextRequest) {
 
   // Only admins may book on behalf of someone else (Global Booking Management); anyone
   // else booking is always attributed to themselves regardless of what's in the body.
+  // Resolved by email server-side against live Firebase Auth data - not a client-cached
+  // user list, which can be stale or not yet loaded when the form is submitted.
   let bookingOwner = { userId: user.uid, userEmail: user.email };
-  const targetUserId = typeof body?.userId === "string" ? body.userId : "";
-  if (targetUserId && targetUserId !== user.uid) {
+  const bookForEmail = typeof body?.bookForEmail === "string" ? body.bookForEmail.trim() : "";
+  if (bookForEmail && bookForEmail.toLowerCase() !== (user.email ?? "").toLowerCase()) {
     if (user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const targetUser = await getUserBasicInfo(targetUserId);
+    const targetUser = await getUserBasicInfoByEmail(bookForEmail);
     if (!targetUser) {
-      return NextResponse.json({ error: "Selected user not found" }, { status: 404 });
+      return NextResponse.json({ error: "No registered user found with this email" }, { status: 404 });
     }
     bookingOwner = { userId: targetUser.uid, userEmail: targetUser.email };
   }
