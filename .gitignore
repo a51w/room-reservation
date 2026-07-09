@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local-only docs (not pushed)
+/README.md
+/API.md
+/CLAUDE.md
+/AGENTS.md
