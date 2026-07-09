@@ -1,15 +1,21 @@
 "use client";
 
-import { FormEvent, Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { createBooking, fetchRooms } from "@/lib/api-client";
 import { ROOM_SIZE_LABEL } from "@/lib/constants";
+import { formatDateTimeRange } from "@/lib/date-utils";
+import type { Booking } from "@/types";
+
+const CONFIRMATION_REDIRECT_DELAY_MS = 1800;
 
 function BookRoomForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedRoomId = searchParams.get("roomId");
 
@@ -23,16 +29,23 @@ function BookRoomForm() {
   const [endTime, setEndTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
   // Priority: explicit selection > ?roomId= from a "book this room" link (e.g. the
   // status dashboard) > the first loaded room - all derived, no effect needed to sync it.
   const selectedRoomId = roomId || preselectedRoomId || rooms?.[0]?.id || "";
 
+  // Give the user a moment to read the confirmation before moving them on - same
+  // "subscribe to a timer, act in its callback" shape as the status dashboard's clock.
+  useEffect(() => {
+    if (!confirmedBooking) return;
+    const timer = setTimeout(() => router.push("/my-bookings"), CONFIRMATION_REDIRECT_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [confirmedBooking, router]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
 
     const start = startTime ? new Date(startTime) : null;
     const end = endTime ? new Date(endTime) : null;
@@ -52,8 +65,8 @@ function BookRoomForm() {
 
     setSubmitting(true);
     try {
-      await createBooking({ roomId: selectedRoomId, title, startTime: start, endTime: end });
-      setSuccess("Room booked successfully.");
+      const booking = await createBooking({ roomId: selectedRoomId, title, startTime: start, endTime: end });
+      setConfirmedBooking(booking);
       setTitle("");
       setStartTime("");
       setEndTime("");
@@ -116,12 +129,30 @@ function BookRoomForm() {
             {error ?? "Failed to load rooms"}
           </p>
         )}
-        {success && <p className="text-sm text-green-600">{success}</p>}
 
         <Button type="submit" loading={submitting} className="w-full">
           Book Room
         </Button>
       </form>
+
+      <Modal open={confirmedBooking !== null}>
+        <div className="space-y-4 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+            <span className="text-2xl text-green-600">✓</span>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Booking Confirmed!</h2>
+            {confirmedBooking && (
+              <p className="mt-1 text-sm text-gray-500">
+                {confirmedBooking.roomName} · {formatDateTimeRange(confirmedBooking.startTime, confirmedBooking.endTime)}
+              </p>
+            )}
+          </div>
+          <Button className="w-full" onClick={() => router.push("/my-bookings")}>
+            View My Bookings
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
