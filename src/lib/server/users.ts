@@ -68,11 +68,12 @@ export async function setUserRole(uid: string, role: UserRole): Promise<void> {
   await adminAuth.setCustomUserClaims(uid, { role });
 }
 
-// Used when an admin books a room on behalf of another user - we only get a uid from the
-// client, so this resolves the email to store on the booking record.
-export async function getUserBasicInfo(uid: string): Promise<{ uid: string; email: string | null } | null> {
+// Used when an admin books a room on behalf of another user - resolves the email they typed
+// to an actual account server-side, so it's always checked against live data rather than
+// a user list that may be stale or not yet loaded in their browser.
+export async function getUserBasicInfoByEmail(email: string): Promise<{ uid: string; email: string | null } | null> {
   try {
-    const record = await adminAuth.getUser(uid);
+    const record = await adminAuth.getUserByEmail(email);
     return { uid: record.uid, email: record.email ?? null };
   } catch {
     return null;
