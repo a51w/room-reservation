@@ -11,6 +11,11 @@ const ACTIONS = [
     title: "My Bookings",
     description: "View and cancel your upcoming reservations.",
   },
+  {
+    href: "/calendar",
+    title: "Calendar Dashboard",
+    description: "See which rooms are booked and when, at a glance.",
+  },
 ];
 
 export default function HomePage() {

@@ -6,13 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { createBooking, fetchRooms } from "@/lib/api-client";
-import type { Room } from "@/types";
-
-const ROOM_SIZE_LABEL: Record<Room["size"], string> = {
-  small: "Small",
-  medium: "Medium",
-  large: "Large",
-};
+import { ROOM_SIZE_LABEL } from "@/lib/constants";
 
 export default function BookRoomPage() {
   const { data: rooms, isLoading: roomsLoading, error: roomsFetchError } = useSWR(
