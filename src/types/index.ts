@@ -39,3 +39,15 @@ export interface UserProfile {
   program: Program;
   createdAt: string;
 }
+
+// A row in the admin "Manage Users" list: Auth account (uid/email/role) joined with
+// the Firestore profile when one exists (admin-created accounts predate self-registration
+// and have no profile doc, so these are nullable).
+export interface AdminUserSummary {
+  uid: string;
+  email: string | null;
+  role: UserRole;
+  name: string | null;
+  studentId: string | null;
+  program: Program | null;
+}

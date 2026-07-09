@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import useSWR from "swr";
-import { AdminOnly } from "@/components/AdminOnly";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -30,14 +29,6 @@ function validateRoomFields(
 }
 
 export default function ManageRoomsPage() {
-  return (
-    <AdminOnly>
-      <ManageRooms />
-    </AdminOnly>
-  );
-}
-
-function ManageRooms() {
   const { data: rooms, mutate } = useSWR("rooms", fetchRooms);
 
   const [name, setName] = useState("");
@@ -140,9 +131,7 @@ function ManageRooms() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <h1 className="text-2xl font-semibold text-gray-900">Manage Rooms</h1>
-
+    <div className="space-y-8">
       <form onSubmit={handleAddSubmit} className="space-y-4 rounded-lg bg-white p-6 shadow-sm">
         <h2 className="text-lg font-medium text-gray-900">Add Room</h2>
 

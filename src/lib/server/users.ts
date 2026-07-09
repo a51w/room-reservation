@@ -1,6 +1,6 @@
 import { FieldValue, type Timestamp, type DocumentSnapshot } from "firebase-admin/firestore";
-import { adminDb } from "@/lib/firebase/admin";
-import type { Program, UserProfile } from "@/types";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import type { AdminUserSummary, Program, UserProfile, UserRole } from "@/types";
 
 const usersCollection = adminDb.collection("users");
 
@@ -36,4 +36,34 @@ export async function createUserProfile(input: CreateUserProfileInput): Promise<
   });
   const doc = await ref.get();
   return toUserProfile(doc);
+}
+
+// Joins Firebase Auth accounts (uid/email/role claim) with the Firestore profile when
+// one exists. Admin-created accounts predate self-registration and have no profile doc,
+// so name/studentId/program come back null for those rather than failing the whole list.
+export async function listUserSummaries(): Promise<AdminUserSummary[]> {
+  const [authResult, profilesSnapshot] = await Promise.all([
+    adminAuth.listUsers(1000),
+    usersCollection.get(),
+  ]);
+
+  const profileByUid = new Map(profilesSnapshot.docs.map((doc) => [doc.id, doc.data()]));
+
+  return authResult.users
+    .map((user) => {
+      const profile = profileByUid.get(user.uid);
+      return {
+        uid: user.uid,
+        email: user.email ?? null,
+        role: (user.customClaims?.role as UserRole | undefined) ?? "normal_user",
+        name: profile?.name ?? null,
+        studentId: profile?.studentId ?? null,
+        program: profile?.program ?? null,
+      };
+    })
+    .sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
+}
+
+export async function setUserRole(uid: string, role: UserRole): Promise<void> {
+  await adminAuth.setCustomUserClaims(uid, { role });
 }

@@ -12,7 +12,7 @@ const NAV_LINKS = [
   { href: "/status", label: "Room Status" },
 ];
 
-const ADMIN_NAV_LINKS = [{ href: "/admin/rooms", label: "Manage Rooms" }];
+const ADMIN_NAV_LINKS = [{ href: "/admin/rooms", label: "Manage" }];
 
 interface AppNavProps {
   user: AppUser;

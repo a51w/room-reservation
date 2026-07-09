@@ -29,8 +29,8 @@ const ACTIONS = [
 const ADMIN_ACTIONS = [
   {
     href: "/admin/rooms",
-    title: "Manage Rooms",
-    description: "Add, edit, or remove meeting rooms.",
+    title: "Manage",
+    description: "Add, edit, or remove rooms, and manage who has admin access.",
   },
 ];
 
