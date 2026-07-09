@@ -6,6 +6,7 @@ import { AdminOnly } from "@/components/AdminOnly";
 
 const ADMIN_TABS = [
   { href: "/admin/rooms", label: "Rooms" },
+  { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/users", label: "Users" },
 ];
 

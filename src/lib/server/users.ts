@@ -67,3 +67,14 @@ export async function listUserSummaries(): Promise<AdminUserSummary[]> {
 export async function setUserRole(uid: string, role: UserRole): Promise<void> {
   await adminAuth.setCustomUserClaims(uid, { role });
 }
+
+// Used when an admin books a room on behalf of another user - we only get a uid from the
+// client, so this resolves the email to store on the booking record.
+export async function getUserBasicInfo(uid: string): Promise<{ uid: string; email: string | null } | null> {
+  try {
+    const record = await adminAuth.getUser(uid);
+    return { uid: record.uid, email: record.email ?? null };
+  } catch {
+    return null;
+  }
+}

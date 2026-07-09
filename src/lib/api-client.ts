@@ -83,6 +83,8 @@ export interface CreateBookingInput {
   title: string;
   startTime: Date;
   endTime: Date;
+  // Admin-only: books the room on behalf of this user instead of the caller.
+  userId?: string;
 }
 
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
@@ -93,6 +95,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
       title: input.title,
       startTime: input.startTime.toISOString(),
       endTime: input.endTime.toISOString(),
+      ...(input.userId ? { userId: input.userId } : {}),
     }),
   });
   return data.booking;
