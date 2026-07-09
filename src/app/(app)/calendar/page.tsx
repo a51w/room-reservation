@@ -8,7 +8,23 @@ import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/hooks/useAuth";
 import { cancelBooking, fetchBookings, fetchRooms } from "@/lib/api-client";
 import { ROOM_SIZE_LABEL, ROOM_SIZES } from "@/lib/constants";
-import { endOfDay, formatDateLabel, formatTimeLabel, parseDateInputValue, startOfDay, toDateInputValue } from "@/lib/date-utils";
+import {
+  addDays,
+  addMonths,
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  formatDateLabel,
+  formatMonthLabel,
+  formatShortDateLabel,
+  formatTimeLabel,
+  formatWeekdayLabel,
+  parseDateInputValue,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  toDateInputValue,
+} from "@/lib/date-utils";
 import type { Booking, RoomSize } from "@/types";
 
 const DAY_START_HOUR = 8;
@@ -21,6 +37,11 @@ const HOUR_LABELS = Array.from(
   { length: DAY_END_HOUR - DAY_START_HOUR + 1 },
   (_, i) => DAY_START_HOUR + i
 );
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MAX_MONTH_CELL_ITEMS = 3;
+
+type ViewMode = "day" | "week" | "month";
+const VIEW_MODES: ViewMode[] = ["day", "week", "month"];
 
 function formatHourLabel(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
@@ -54,9 +75,39 @@ function layoutBooking(booking: Booking, dayStart: Date): BookingLayout | null {
   };
 }
 
+function rangeForView(date: Date, viewMode: ViewMode): { start: Date; end: Date } {
+  if (viewMode === "day") return { start: startOfDay(date), end: endOfDay(date) };
+  if (viewMode === "week") return { start: startOfWeek(date), end: endOfWeek(date) };
+  return { start: startOfWeek(startOfMonth(date)), end: endOfWeek(endOfMonth(date)) };
+}
+
+function shiftDate(date: Date, viewMode: ViewMode, direction: 1 | -1): Date {
+  if (viewMode === "day") return addDays(date, direction);
+  if (viewMode === "week") return addDays(date, direction * 7);
+  return addMonths(date, direction);
+}
+
+function viewRangeLabel(date: Date, viewMode: ViewMode): string {
+  if (viewMode === "day") {
+    return date.toLocaleDateString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
+  if (viewMode === "week") {
+    const start = startOfWeek(date);
+    const end = addDays(start, 6);
+    return `${formatShortDateLabel(start)} - ${formatShortDateLabel(end)}, ${end.getFullYear()}`;
+  }
+  return formatMonthLabel(date);
+}
+
 export default function CalendarDashboardPage() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [sizeFilter, setSizeFilter] = useState<Record<RoomSize, boolean>>({
     small: true,
     medium: true,
@@ -69,6 +120,8 @@ export default function CalendarDashboardPage() {
 
   const dayStart = startOfDay(selectedDate);
   const dateKey = toDateInputValue(selectedDate);
+  const { start: rangeStart, end: rangeEnd } = rangeForView(selectedDate, viewMode);
+  const rangeKey = `${toDateInputValue(rangeStart)}_${toDateInputValue(rangeEnd)}`;
 
   const { data: rooms } = useSWR("rooms", fetchRooms);
   const {
@@ -76,8 +129,8 @@ export default function CalendarDashboardPage() {
     isLoading: bookingsLoading,
     error: bookingsFetchError,
     mutate: refreshBookings,
-  } = useSWR(["calendar-bookings", dateKey], () =>
-    fetchBookings({ from: dayStart, to: endOfDay(selectedDate) })
+  } = useSWR(["calendar-bookings", viewMode, rangeKey], () =>
+    fetchBookings({ from: rangeStart, to: rangeEnd })
   );
 
   const visibleRooms = (rooms ?? []).filter((room) => sizeFilter[room.size]);
@@ -97,6 +150,11 @@ export default function CalendarDashboardPage() {
     setSizeFilter((prev) => ({ ...prev, [size]: !prev[size] }));
   };
 
+  const goToDay = (date: Date) => {
+    setSelectedDate(date);
+    setViewMode("day");
+  };
+
   const handleCancel = async (bookingId: string) => {
     setCancelingId(bookingId);
     setActionError(null);
@@ -113,7 +171,23 @@ export default function CalendarDashboardPage() {
 
   const selectedRoom = rooms?.find((room) => room.id === selectedBooking?.roomId) ?? null;
 
-  const gridHeight = ((DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT_PX);
+  const gridHeight = (DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT_PX;
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(selectedDate), i));
+
+  const monthCells: Date[] = [];
+  {
+    const gridStart = startOfWeek(startOfMonth(selectedDate));
+    const gridEnd = endOfWeek(endOfMonth(selectedDate));
+    for (let d = gridStart; d <= gridEnd; d = addDays(d, 1)) monthCells.push(d);
+  }
+
+  const bookingsByDay = (day: Date) => {
+    const key = toDateInputValue(day);
+    return visibleBookings
+      .filter((b) => toDateInputValue(new Date(b.startTime)) === key)
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  };
 
   return (
     <div className="space-y-6">
@@ -132,21 +206,18 @@ export default function CalendarDashboardPage() {
           <div>
             <h2 className="mb-2 text-sm font-semibold text-gray-900">View</h2>
             <div className="flex overflow-hidden rounded-md border border-gray-300">
-              <span className="flex-1 bg-blue-600 px-3 py-1.5 text-center text-sm font-medium text-white">
-                Day
-              </span>
-              <span
-                className="flex-1 cursor-not-allowed px-3 py-1.5 text-center text-sm text-gray-400"
-                title="Week view is coming soon"
-              >
-                Week
-              </span>
-              <span
-                className="flex-1 cursor-not-allowed px-3 py-1.5 text-center text-sm text-gray-400"
-                title="Month view is coming soon"
-              >
-                Month
-              </span>
+              {VIEW_MODES.map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setViewMode(mode)}
+                  className={`flex-1 px-3 py-1.5 text-center text-sm font-medium capitalize ${
+                    viewMode === mode ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -197,10 +268,28 @@ export default function CalendarDashboardPage() {
         </aside>
 
         <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-white p-3 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setSelectedDate((d) => shiftDate(d, viewMode, -1))}
+              aria-label="Previous"
+              className="rounded-md border border-gray-300 px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              ‹
+            </button>
+            <p className="text-sm font-medium text-gray-900">{viewRangeLabel(selectedDate, viewMode)}</p>
+            <button
+              type="button"
+              onClick={() => setSelectedDate((d) => shiftDate(d, viewMode, 1))}
+              aria-label="Next"
+              className="rounded-md border border-gray-300 px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              ›
+            </button>
+          </div>
+
           {actionError && <p className="text-sm text-red-600">{actionError}</p>}
-          {bookingsFetchError && (
-            <p className="text-sm text-red-600">Failed to load bookings for this day.</p>
-          )}
+          {bookingsFetchError && <p className="text-sm text-red-600">Failed to load bookings.</p>}
 
           {!rooms || rooms.length === 0 ? (
             <div className="rounded-lg bg-white p-6 text-sm text-gray-500 shadow-sm">
@@ -210,7 +299,7 @@ export default function CalendarDashboardPage() {
             <div className="rounded-lg bg-white p-6 text-sm text-gray-500 shadow-sm">
               No rooms match the selected room type filter.
             </div>
-          ) : (
+          ) : viewMode === "day" ? (
             <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
               <div className="flex" style={{ minWidth: `${visibleRooms.length * 180 + 64}px` }}>
                 <div className="w-16 flex-shrink-0 border-r border-gray-200">
@@ -268,6 +357,103 @@ export default function CalendarDashboardPage() {
                             </p>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : viewMode === "week" ? (
+            <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
+              {bookingsLoading && <p className="px-3 pt-2 text-xs text-gray-400">Loading bookings...</p>}
+              <div className="grid grid-cols-7" style={{ minWidth: "700px" }}>
+                {weekDays.map((day) => {
+                  const dayKey = toDateInputValue(day);
+                  const dayBookings = bookingsByDay(day);
+                  const isToday = dayKey === toDateInputValue(new Date());
+
+                  return (
+                    <div key={dayKey} className="min-h-[240px] border-r border-gray-200 last:border-r-0">
+                      <button
+                        type="button"
+                        onClick={() => goToDay(day)}
+                        className={`flex w-full flex-col items-center gap-0.5 border-b border-gray-200 py-2 hover:bg-gray-50 ${
+                          isToday ? "bg-blue-50" : ""
+                        }`}
+                      >
+                        <span className="text-xs text-gray-500">{formatWeekdayLabel(day)}</span>
+                        <span className={`text-sm font-medium ${isToday ? "text-blue-600" : "text-gray-900"}`}>
+                          {day.getDate()}
+                        </span>
+                      </button>
+                      <div className="space-y-1.5 p-1.5">
+                        {dayBookings.length === 0 ? (
+                          <p className="px-1 py-2 text-center text-xs text-gray-400">No bookings</p>
+                        ) : (
+                          dayBookings.map((booking) => (
+                            <button
+                              key={booking.id}
+                              type="button"
+                              onClick={() => setSelectedBooking(booking)}
+                              className="block w-full truncate rounded-md border border-blue-300 bg-blue-50 px-1.5 py-1 text-left text-xs text-blue-900 hover:shadow-sm"
+                            >
+                              <span className="font-medium">{formatTimeLabel(booking.startTime)}</span>{" "}
+                              {booking.title}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg bg-white shadow-sm">
+              {bookingsLoading && <p className="px-3 pt-2 text-xs text-gray-400">Loading bookings...</p>}
+              <div className="grid grid-cols-7 gap-px bg-gray-200" style={{ minWidth: "700px" }}>
+                {WEEKDAY_LABELS.map((wd) => (
+                  <div key={wd} className="bg-gray-50 py-1.5 text-center text-xs font-medium text-gray-500">
+                    {wd}
+                  </div>
+                ))}
+                {monthCells.map((day) => {
+                  const dayKey = toDateInputValue(day);
+                  const dayBookings = bookingsByDay(day);
+                  const inMonth = day.getMonth() === selectedDate.getMonth();
+                  const isToday = dayKey === toDateInputValue(new Date());
+
+                  return (
+                    <div key={dayKey} className={`min-h-[96px] bg-white p-1 ${inMonth ? "" : "bg-gray-50"}`}>
+                      <button
+                        type="button"
+                        onClick={() => goToDay(day)}
+                        className={`mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium hover:bg-gray-100 ${
+                          isToday
+                            ? "bg-blue-600 text-white hover:bg-blue-700"
+                            : inMonth
+                              ? "text-gray-900"
+                              : "text-gray-400"
+                        }`}
+                      >
+                        {day.getDate()}
+                      </button>
+                      <div className="space-y-0.5">
+                        {dayBookings.slice(0, MAX_MONTH_CELL_ITEMS).map((booking) => (
+                          <button
+                            key={booking.id}
+                            type="button"
+                            onClick={() => setSelectedBooking(booking)}
+                            className="block w-full truncate rounded bg-blue-50 px-1 py-0.5 text-left text-[11px] text-blue-900 hover:bg-blue-100"
+                          >
+                            {booking.title}
+                          </button>
+                        ))}
+                        {dayBookings.length > MAX_MONTH_CELL_ITEMS && (
+                          <p className="px-1 text-[11px] text-gray-500">
+                            +{dayBookings.length - MAX_MONTH_CELL_ITEMS} more
+                          </p>
+                        )}
                       </div>
                     </div>
                   );
