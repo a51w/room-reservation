@@ -4,10 +4,18 @@ import { FormEvent, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { createRoom, deleteRoom, fetchRooms, updateRoom } from "@/lib/api-client";
 import { DEFAULT_ROOM_LOCATION, ROOM_SIZE_CAPACITY_MAX, ROOM_SIZE_LABEL, ROOM_SIZES } from "@/lib/constants";
 import type { Room, RoomSize } from "@/types";
+
+interface PendingRoom {
+  name: string;
+  size: RoomSize;
+  location: string;
+  capacity: number;
+}
 
 function validateRoomFields(
   name: string,
@@ -35,8 +43,10 @@ export default function ManageRoomsPage() {
   const [size, setSize] = useState<RoomSize>("small");
   const [location, setLocation] = useState(DEFAULT_ROOM_LOCATION);
   const [capacity, setCapacity] = useState(String(ROOM_SIZE_CAPACITY_MAX.small));
-  const [addSubmitting, setAddSubmitting] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [pendingRoom, setPendingRoom] = useState<PendingRoom | null>(null);
+  const [addConfirming, setAddConfirming] = useState(false);
+  const [addedRoom, setAddedRoom] = useState<Room | null>(null);
 
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -54,7 +64,7 @@ export default function ManageRoomsPage() {
     setCapacity(String(ROOM_SIZE_CAPACITY_MAX[newSize]));
   };
 
-  const handleAddSubmit = async (e: FormEvent) => {
+  const handleAddSubmit = (e: FormEvent) => {
     e.preventDefault();
     setAddError(null);
 
@@ -64,17 +74,26 @@ export default function ManageRoomsPage() {
       return;
     }
 
-    setAddSubmitting(true);
+    setPendingRoom({ name: name.trim(), size, location: location.trim(), capacity: result.capacity });
+  };
+
+  const handleConfirmAdd = async () => {
+    if (!pendingRoom) return;
+    setAddConfirming(true);
+    setAddError(null);
     try {
-      await createRoom({ name: name.trim(), size, location: location.trim(), capacity: result.capacity });
+      const room = await createRoom(pendingRoom);
       await mutate();
+      setAddedRoom(room);
+      setPendingRoom(null);
       setName("");
       setLocation(DEFAULT_ROOM_LOCATION);
       setCapacity(String(ROOM_SIZE_CAPACITY_MAX[size]));
     } catch (err) {
       setAddError(err instanceof Error ? err.message : "Failed to add room");
+      setPendingRoom(null);
     } finally {
-      setAddSubmitting(false);
+      setAddConfirming(false);
     }
   };
 
@@ -172,10 +191,72 @@ export default function ManageRoomsPage() {
 
         {addError && <p className="text-sm text-red-600">{addError}</p>}
 
-        <Button type="submit" loading={addSubmitting} className="w-full">
+        <Button type="submit" className="w-full">
           Add Room
         </Button>
       </form>
+
+      <Modal open={pendingRoom !== null} onClose={addConfirming ? undefined : () => setPendingRoom(null)}>
+        {pendingRoom && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Confirm New Room</h2>
+
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Name</dt>
+                <dd className="text-right text-gray-900">{pendingRoom.name}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Size</dt>
+                <dd className="text-right text-gray-900">{ROOM_SIZE_LABEL[pendingRoom.size]}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Location</dt>
+                <dd className="text-right text-gray-900">{pendingRoom.location}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Capacity</dt>
+                <dd className="text-right text-gray-900">{pendingRoom.capacity} people</dd>
+              </div>
+            </dl>
+
+            {addError && <p className="text-sm text-red-600">{addError}</p>}
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setPendingRoom(null)}
+              >
+                Cancel
+              </Button>
+              <Button type="button" className="flex-1" loading={addConfirming} onClick={handleConfirmAdd}>
+                Confirm
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal open={addedRoom !== null} onClose={() => setAddedRoom(null)}>
+        {addedRoom && (
+          <div className="space-y-4 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+              <span className="text-2xl text-green-600">✓</span>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Room Added!</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                {addedRoom.name} ({ROOM_SIZE_LABEL[addedRoom.size]})
+              </p>
+            </div>
+            <Button className="w-full" onClick={() => setAddedRoom(null)}>
+              Close
+            </Button>
+          </div>
+        )}
+      </Modal>
 
       <div className="space-y-3">
         <h2 className="text-lg font-medium text-gray-900">Rooms</h2>
