@@ -3,6 +3,7 @@ export type UserRole = "admin" | "normal_user";
 export interface AppUser {
   uid: string;
   email: string | null;
+  name: string | null;
   role: UserRole;
 }
 

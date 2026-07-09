@@ -18,8 +18,7 @@ interface UseAuthReturn {
   logout: () => Promise<void>;
 }
 
-// Reads the "role" custom claim off the Firebase user and assembles an AppUser.
-// Pulled into its own function because it runs every time auth state changes.
+// Converts a Firebase user into our own AppUser type, which includes the custom role claim.
 async function toAppUser(firebaseUser: FirebaseUser): Promise<AppUser> {
   const tokenResult = await firebaseUser.getIdTokenResult();
   const role = (tokenResult.claims.role as UserRole) ?? "normal_user";
@@ -27,6 +26,7 @@ async function toAppUser(firebaseUser: FirebaseUser): Promise<AppUser> {
   return {
     uid: firebaseUser.uid,
     email: firebaseUser.email,
+    name: firebaseUser.displayName,
     role,
   };
 }
@@ -36,9 +36,8 @@ export function useAuth(): UseAuthReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Listen for Firebase auth state changes and update our user state accordingly.
   useEffect(() => {
-    // onAuthStateChanged keeps listening for login/logout, so individual pages
-    // don't need to run their own manual auth checks.
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(await toAppUser(firebaseUser));
@@ -69,8 +68,7 @@ export function useAuth(): UseAuthReturn {
   return { user, loading, error, login, logout };
 }
 
-// Converts a Firebase error code into a readable message.
-// Reusable anywhere an auth error surfaces, so we don't repeat the switch-case.
+// Converts Firebase auth errors into user-friendly messages.
 function getAuthErrorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code;
   switch (code) {
