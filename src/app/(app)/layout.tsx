@@ -18,6 +18,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [loading, user, router]);
 
+  // Navigate immediately rather than awaiting logout() - by the time the auth state
+  // change actually lands, we're already off this layout, so its own redirect-to-/login
+  // effect above never gets a chance to fire and flash /login before landing on /.
+  const handleSignOut = () => {
+    logout();
+    router.push("/");
+  };
+
   if (loading || !user) {
     return (
       <div className="flex flex-1 items-center justify-center bg-gray-50">
@@ -28,7 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-gray-50">
-      <AppNav user={user} onSignOut={logout} />
+      <AppNav user={user} onSignOut={handleSignOut} />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">{children}</main>
     </div>
   );
