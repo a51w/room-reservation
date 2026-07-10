@@ -16,6 +16,11 @@ function toUserProfile(doc: DocumentSnapshot): UserProfile {
   };
 }
 
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+  const doc = await usersCollection.doc(uid).get();
+  return doc.exists ? toUserProfile(doc) : null;
+}
+
 export interface CreateUserProfileInput {
   uid: string;
   name: string;

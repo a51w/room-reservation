@@ -131,6 +131,11 @@ export async function fetchUsers(): Promise<AdminUserSummary[]> {
   return data.users;
 }
 
+export async function fetchMyProfile(): Promise<AdminUserSummary> {
+  const data = await authedFetch("/api/users/me");
+  return data.profile;
+}
+
 export async function setUserRole(uid: string, role: UserRole): Promise<void> {
   await authedFetch(`/api/users/${uid}`, {
     method: "PATCH",
