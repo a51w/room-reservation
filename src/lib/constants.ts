@@ -8,9 +8,7 @@ export const ROOM_SIZE_LABEL: Record<RoomSize, string> = {
   large: "Large",
 };
 
-// Ceiling on a room's capacity for its size class - a small room can be smaller
-// than 20, but never larger. Enforced both client-side (form hint/max) and
-// server-side (the actual validation).
+// Maximum capacity for each room size, used for validation when creating/updating rooms.
 export const ROOM_SIZE_CAPACITY_MAX: Record<RoomSize, number> = {
   small: 20,
   medium: 50,

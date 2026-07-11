@@ -8,7 +8,6 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 // Shared button used across every form in the app (login, booking, room management).
-// Has loading state built in so we don't rewrite disabled/spinner handling everywhere.
 export function Button({
   loading,
   variant = "primary",
