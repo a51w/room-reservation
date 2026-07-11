@@ -8,9 +8,7 @@ export interface AuthedUser {
   role: UserRole;
 }
 
-// Verifies the Firebase ID token from the Authorization header and reads the "role" custom claim.
-// Every route handler that needs auth goes through this single function, so authorization logic
-// doesn't get duplicated across routes.
+// Given a NextRequest, returns the authenticated user (uid/email/role) if the request
 export async function getAuthedUser(request: NextRequest): Promise<AuthedUser | null> {
   const authHeader = request.headers.get("authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
