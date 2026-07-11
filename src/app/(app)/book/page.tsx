@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Button } from "@/components/ui/Button";
+import { DateTimeInput } from "@/components/ui/DateTimeInput";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
@@ -169,23 +170,9 @@ function BookRoomForm() {
           required
         />
 
-        <Input
-          id="startTime"
-          label="Start Time"
-          type="datetime-local"
-          value={startTime}
-          onChange={(e) => setStartTime(e.target.value)}
-          required
-        />
+        <DateTimeInput id="startTime" label="Start Time" value={startTime} onChange={setStartTime} required />
 
-        <Input
-          id="endTime"
-          label="End Time"
-          type="datetime-local"
-          value={endTime}
-          onChange={(e) => setEndTime(e.target.value)}
-          required
-        />
+        <DateTimeInput id="endTime" label="End Time" value={endTime} onChange={setEndTime} required />
 
         {(error || roomsFetchError) && (
           <p className="text-sm text-red-600">
