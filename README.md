@@ -93,3 +93,5 @@ Two roles: `normal_user` and `admin`, stored as a Firebase Auth custom claim
 and checked **server-side on every API route** (not just hidden in the UI).
 `normal_user` can only act on their own bookings; `admin` can act on anyone's
 room, booking, or account.
+
+API Reference: https://drive.google.com/file/d/1Ys79QuFdqslilAWQnpW-NjHibFdwQnBG/view?usp=sharing
