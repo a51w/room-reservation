@@ -210,6 +210,12 @@ function BookRoomForm() {
                   {pendingRoom ? `${pendingRoom.name} (${ROOM_SIZE_LABEL[pendingRoom.size]})` : "—"}
                 </dd>
               </div>
+              {pendingRoom && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-gray-500">Capacity</dt>
+                  <dd className="text-right text-gray-900">{pendingRoom.capacity} people</dd>
+                </div>
+              )}
               {pendingBooking.bookForEmail && (
                 <div className="flex justify-between gap-4">
                   <dt className="text-gray-500">Booking For</dt>
