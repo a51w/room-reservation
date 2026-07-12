@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { fetchMyProfile } from "@/lib/api-client";
 import { PROGRAM_LABEL } from "@/lib/constants";
-import type { AppUser } from "@/types";
+import type { AppUser } from "@/types/roomtype-index";
 
 const NAV_LINKS = [
   { href: "/book", label: "Book a Room" },

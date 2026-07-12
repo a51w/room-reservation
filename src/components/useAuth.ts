@@ -8,7 +8,7 @@ import {
   User as FirebaseUser,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
-import type { AppUser, UserRole } from "@/types";
+import type { AppUser, UserRole } from "@/types/roomtype-index";
 
 interface UseAuthReturn {
   user: AppUser | null;

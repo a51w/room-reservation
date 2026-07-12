@@ -1,5 +1,5 @@
 import { auth } from "@/lib/firebase/client";
-import type { AdminUserSummary, Booking, Program, Room, RoomSize, UserRole } from "@/types";
+import type { AdminUserSummary, Booking, Program, Room, RoomSize, UserRole } from "@/types/roomtype-index";
 
 // Helper function to make an authenticated fetch request to our API routes.
 async function authedFetch(path: string, options: RequestInit = {}) {

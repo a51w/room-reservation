@@ -1,11 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
-import type { UserRole } from "../src/types";
+import type { UserRole } from "../src/types/roomtype-index";
 
 async function main() {
-  // Must be a dynamic import so dotenv.config() has actually run before admin.ts
-  // gets initialized (works around ESM import hoisting)
+  // Importing "firebase-admin" dynamically here to avoid bundling it into the script, since it's only needed for this one-off admin operation and not for the client-side code.
   const { adminAuth } = await import("../src/lib/firebase/admin");
 
   const [, , email, role] = process.argv;

@@ -1,6 +1,6 @@
 import { FieldValue, type Timestamp, type QueryDocumentSnapshot, type DocumentSnapshot } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
-import type { Room, RoomSize } from "@/types";
+import type { Room, RoomSize } from "@/types/roomtype-index";
 
 const roomsCollection = adminDb.collection("rooms");
 
@@ -21,8 +21,7 @@ export async function listRooms(): Promise<Room[]> {
   return snapshot.docs.map(toRoom);
 }
 
-// Firestore has no case-insensitive query, and the room count is small, so we
-// just compare in memory rather than adding another composite index to manage.
+// Checks if a room name already exists in the database, optionally excluding a specific room ID (useful when updating a room).
 export async function roomNameExists(name: string, excludeRoomId?: string): Promise<boolean> {
   const snapshot = await roomsCollection.get();
   const normalized = name.trim().toLowerCase();

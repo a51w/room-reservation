@@ -1,12 +1,11 @@
 import {
-  FieldValue,
-  Timestamp,
+  FieldValue, Timestamp,
   type QueryDocumentSnapshot,
   type DocumentSnapshot,
 } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
-import type { Booking } from "@/types";
-import { getRoom } from "./rooms";
+import type { Booking } from "@/types/roomtype-index";
+import { getRoom } from "./server-rooms";
 
 const bookingsCollection = adminDb.collection("bookings");
 
@@ -46,12 +45,7 @@ export interface ListBookingsFilter {
   to?: Date;
 }
 
-// Firestore needs a composite index for any query that combines an equality filter with a
-// range filter on a different field (or two equality filters plus a range/orderBy) — that
-// index has to be deployed ahead of time via the Firebase CLI/console, which isn't available
-// in this project's workflow. So we only ever run a plain orderBy query here (always covered
-// by Firestore's automatic single-field indexes) and apply every filter in memory instead.
-// Fine at this app's scale (one department, moderate booking volume).
+// Lists bookings in ascending order of startTime, optionally filtered by roomId, userId, and/or a time range.
 export async function listBookings(filter: ListBookingsFilter = {}): Promise<Booking[]> {
   const snapshot = await bookingsCollection.orderBy("startTime").get();
   let bookings = snapshot.docs.map(toBooking);
@@ -94,10 +88,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
 
   const ref = bookingsCollection.doc();
 
-  // Run inside a transaction to guard against a race when two people book the same room for
-  // overlapping times at nearly the same moment. Only a single equality filter (roomId) runs
-  // server-side — no composite index needed — and the actual overlap check (startTime <
-  // newEndTime && endTime > newStartTime) happens in memory over that room's bookings.
+  // Use a transaction to check for overlapping bookings and create the new booking atomically.
   await adminDb.runTransaction(async (tx) => {
     const overlapQuery = bookingsCollection.where("roomId", "==", input.roomId);
     const snapshot = await tx.get(overlapQuery);
