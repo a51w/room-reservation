@@ -1,6 +1,6 @@
 import { FieldValue, type Timestamp, type DocumentSnapshot } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
-import type { AdminUserSummary, Program, UserProfile, UserRole } from "@/types";
+import type { AdminUserSummary, Program, UserProfile, UserRole } from "@/types/roomtype-index";
 
 const usersCollection = adminDb.collection("users");
 
@@ -43,9 +43,7 @@ export async function createUserProfile(input: CreateUserProfileInput): Promise<
   return toUserProfile(doc);
 }
 
-// Joins Firebase Auth accounts (uid/email/role claim) with the Firestore profile when
-// one exists. Admin-created accounts predate self-registration and have no profile doc,
-// so name/studentId/program come back null for those rather than failing the whole list.
+// Lists all users in the system, combining Auth account info with Firestore profile data when it exists.
 export async function listUserSummaries(): Promise<AdminUserSummary[]> {
   const [authResult, profilesSnapshot] = await Promise.all([
     adminAuth.listUsers(1000),
@@ -73,9 +71,7 @@ export async function setUserRole(uid: string, role: UserRole): Promise<void> {
   await adminAuth.setCustomUserClaims(uid, { role });
 }
 
-// Used when an admin books a room on behalf of another user - resolves the email they typed
-// to an actual account server-side, so it's always checked against live data rather than
-// a user list that may be stale or not yet loaded in their browser.
+// Looks up a user's Auth account by email, returning uid/email if found or null if not.
 export async function getUserBasicInfoByEmail(email: string): Promise<{ uid: string; email: string | null } | null> {
   try {
     const record = await adminAuth.getUserByEmail(email);

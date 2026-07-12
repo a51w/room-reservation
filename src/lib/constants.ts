@@ -1,4 +1,4 @@
-import type { Program, RoomSize } from "@/types";
+import type { Program, RoomSize } from "@/types/roomtype-index";
 
 export const ROOM_SIZES: RoomSize[] = ["small", "medium", "large"];
 

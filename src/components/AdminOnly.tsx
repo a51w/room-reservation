@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/components/useAuth";
 
 // Client-side gate for admin-only pages (Manage Rooms, and future Global Booking
 // Management). Like the (app) auth guard, this is a UX convenience, not a security

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { adminAuth } from "./admin";
-import type { UserRole } from "@/types";
+import type { UserRole } from "@/types/roomtype-index";
 
 export interface AuthedUser {
   uid: string;
